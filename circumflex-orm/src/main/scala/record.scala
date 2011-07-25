@@ -285,7 +285,7 @@ trait IdentityGenerator[PK, R <: Record[PK, R]] extends Generator[PK, R] { this:
 }
 
 trait SequenceGenerator[PK, R <: Record[PK, R]] extends Generator[PK, R] { this: R =>
-  def persist(fields: scala.Seq[Field[_, R]]): Int = {
+  def persist(fields: scala.Seq[Field[_, R]])(implicit tx: Transaction): Int = {
     // Poll database for next sequence value
     val root = relation.AS("root")
     dialect.sequenceNextValQuery(root).unique() match {

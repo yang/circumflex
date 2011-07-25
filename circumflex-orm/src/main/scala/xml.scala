@@ -33,7 +33,7 @@ class Deployment(val id: String,
                  val validate: Boolean = true,
                  val entries: Seq[Node]) {
 
-  def process() {
+  def process()(implicit tx: Transaction) {
     try {
       entries.foreach(e => processNode(e, Nil))
       COMMIT()
@@ -46,7 +46,7 @@ class Deployment(val id: String,
 
   protected def processNode[R <: Record[Any, R]](
       node: Node,
-      parentPath: Seq[Pair[Association[_, _, _], Record[_, _]]]): Record[Any, R] = {
+      parentPath: Seq[Pair[Association[_, _, _], Record[_, _]]])(implicit tx: Transaction): Record[Any, R] = {
     val cl = pickClass(node)
     var r = cl.newInstance.asInstanceOf[R]
     var update = false

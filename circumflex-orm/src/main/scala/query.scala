@@ -310,7 +310,7 @@ class Select[T](projection: Projection[T]) extends SQLQuery[T](projection)
 /*! The `DMLQuery` trait defines a contract for data-manipulation queries. */
 trait DMLQuery extends Query {
 
-  def execute(): Int = {
+  def execute()(implicit tx: Transaction): Int = {
     val result = time {
       tx.execute(toSql, { st =>
         setParams(st, 1)
