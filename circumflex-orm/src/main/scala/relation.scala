@@ -333,15 +333,15 @@ trait Relation[PK, R <: Record[PK, R]]
     case _ => false
   }
 
-  override def refresh(): Nothing =
+  override def refresh()(implicit tx: Transaction): Nothing =
     throw new ORMException("This method cannot be invoked on relation instance.")
   override def validate(): Nothing =
     throw new ORMException("This method cannot be invoked on relation instance.")
-  override def INSERT_!(fields: Field[_, R]*): Nothing =
+  override def INSERT_!(fields: Field[_, R]*)(implicit tx: Transaction): Nothing =
     throw new ORMException("This method cannot be invoked on relation instance.")
-  override def UPDATE_!(fields: Field[_, R]*): Nothing =
+  override def UPDATE_!(fields: Field[_, R]*)(implicit tx: Transaction): Nothing =
     throw new ORMException("This method cannot be invoked on relation instance.")
-  override def DELETE_!(): Nothing =
+  override def DELETE_!()(implicit tx: Transaction): Nothing =
     throw new ORMException("This method cannot be invoked on relation instance.")
 }
 

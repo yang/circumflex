@@ -49,11 +49,11 @@ package object orm {
 
   def contextCache = CacheService.get
 
-  def tx: Transaction = transactionManager.get
-  def COMMIT() {
+  implicit def tx: Transaction = transactionManager.get
+  def COMMIT()(implicit tx: Transaction) {
     tx.commit()
   }
-  def ROLLBACK() {
+  def ROLLBACK()(implicit tx: Transaction) {
     tx.rollback()
   }
 

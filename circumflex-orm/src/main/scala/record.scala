@@ -67,7 +67,7 @@ abstract class Record[PK, R <: Record[PK, R]] extends Equals { this: R =>
   to use different strategy mix in one of the `Generator` traits or simply override the `persist`
   method.
   */
-  def refresh(): this.type = if (isTransient)
+  def refresh()(implicit tx: Transaction): this.type = if (isTransient)
     throw new ORMException("Could not refresh transient record.")
   else {
     val root = relation.AS("root")
@@ -82,7 +82,7 @@ abstract class Record[PK, R <: Record[PK, R]] extends Equals { this: R =>
     }
   }
 
-  def INSERT_!(fields: Field[_, R]*): Int = if (relation.isReadOnly)
+  def INSERT_!(fields: Field[_, R]*)(implicit tx: Transaction): Int = if (relation.isReadOnly)
     throw new ORMException("The relation " + relation.qualifiedName + " is read-only.")
   else {
     // Execute events
@@ -97,12 +97,12 @@ abstract class Record[PK, R <: Record[PK, R]] extends Equals { this: R =>
     result
   }
 
-  def INSERT(fields: Field[_, R]*): Int = {
+  def INSERT(fields: Field[_, R]*)(implicit tx: Transaction): Int = {
     validate_!()
     INSERT_!(fields: _*)
   }
 
-  protected def _persist(fields: Seq[Field[_, R]]): Int = PRIMARY_KEY.value match {
+  protected def _persist(fields: Seq[Field[_, R]])(implicit tx: Transaction): Int = PRIMARY_KEY.value match {
     case Some(id: PK) =>
       val result = new Insert(relation, fields.filter(!_.isNull)).execute()
       if (relation.isAutoRefresh) refresh()
@@ -111,7 +111,7 @@ abstract class Record[PK, R <: Record[PK, R]] extends Equals { this: R =>
         "Use one of the generators if you wish identifiers to be generated automatically.")
   }
 
-  def UPDATE_!(fields: Field[_, R]*): Int = if (relation.isReadOnly)
+  def UPDATE_!(fields: Field[_, R]*)(implicit tx: Transaction): Int = if (relation.isReadOnly)
     throw new ORMException("The relation " + relation.qualifiedName + " is read-only.")
   else {
     if (PRIMARY_KEY.isNull)
@@ -135,12 +135,12 @@ abstract class Record[PK, R <: Record[PK, R]] extends Equals { this: R =>
     result
   }
 
-  def UPDATE(fields: Field[_, R]*): Int = {
+  def UPDATE(fields: Field[_, R]*)(implicit tx: Transaction): Int = {
     validate_!()
     UPDATE_!(fields: _*)
   }
 
-  def DELETE_!(): Int = if (relation.isReadOnly)
+  def DELETE_!()(implicit tx: Transaction): Int = if (relation.isReadOnly)
     throw new ORMException("The relation " + relation.qualifiedName + " is read-only.")
   else {
     if (PRIMARY_KEY.isNull)
@@ -166,7 +166,7 @@ abstract class Record[PK, R <: Record[PK, R]] extends Equals { this: R =>
 
   def validate_!() = validate().map(errors => throw new ValidationException(errors))
 
-  def save_!(): Int = if (isTransient)
+  def save_!()(implicit tx: Transaction): Int = if (isTransient)
     throw new ORMException("Application-assigned identifier is expected. " +
         "Use one of the generators if you wish identifiers to be generated automatically.")
   else relation.get(PRIMARY_KEY()) match {
@@ -174,7 +174,7 @@ abstract class Record[PK, R <: Record[PK, R]] extends Equals { this: R =>
     case _ => INSERT_!()
   }
 
-  def save(): Int = {
+  def save()(implicit tx: Transaction): Int = {
     validate_!()
     save_!()
   }
@@ -256,13 +256,13 @@ traits. Following identity generators are supported out-of-box:
   next sequence value which is then used as an identifier for persisting.
 */
 trait Generator[PK, R <: Record[PK, R]] extends Record[PK, R] { this: R =>
-  override protected def _persist(fields: scala.Seq[Field[_, R]]): Int = persist(fields)
-  def persist(fields: Seq[Field[_, R]]): Int
-  override def save_!(): Int = if (isTransient) INSERT_!() else UPDATE_!()
+  override protected def _persist(fields: scala.Seq[Field[_, R]])(implicit tx: Transaction): Int = persist(fields)
+  def persist(fields: Seq[Field[_, R]])(implicit tx: Transaction): Int
+  override def save_!()(implicit tx: Transaction): Int = if (isTransient) INSERT_!() else UPDATE_!()
 }
 
 trait IdentityGenerator[PK, R <: Record[PK, R]] extends Generator[PK, R] { this: R =>
-  def persist(fields: scala.Seq[Field[_, R]]): Int = {
+  def persist(fields: scala.Seq[Field[_, R]])(implicit tx: Transaction): Int = {
     // Make sure that PRIMARY_KEY contains `NULL`
     this.PRIMARY_KEY.setNull()
     // Persist all not-null fields

@@ -93,7 +93,7 @@ abstract class SQLQuery[T](val projection: Projection[T]) extends Query {
 
   // Query execution
 
-  def resultSet[A](actions: ResultSet => A): A = {
+  def resultSet[A](actions: ResultSet => A)(implicit tx: Transaction): A = {
     val result = time {
       tx.execute(toSql, { st =>
         setParams(st, 1)
@@ -112,7 +112,7 @@ abstract class SQLQuery[T](val projection: Projection[T]) extends Query {
 
   def read(rs: ResultSet): Option[T] = projection.read(rs)
 
-  def list(): Seq[T] = resultSet { rs =>
+  def list()(implicit tx: Transaction): Seq[T] = resultSet { rs =>
     var result = List[T]()
     while (rs.next) read(rs) match {
       case Some(r) =>
@@ -122,7 +122,7 @@ abstract class SQLQuery[T](val projection: Projection[T]) extends Query {
     result
   }
 
-  def unique(): Option[T] = resultSet(rs => {
+  def unique()(implicit tx: Transaction): Option[T] = resultSet(rs => {
     if (!rs.next)
       None
     else if (rs.isLast)

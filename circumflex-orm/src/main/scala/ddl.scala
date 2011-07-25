@@ -88,7 +88,7 @@ class DDLUnit {
     this
   }
 
-  protected def dropObjects(objects: Seq[SchemaObject]) {
+  protected def dropObjects(objects: Seq[SchemaObject])(implicit tx: Transaction) {
     objects.reverse.foreach { o =>
       tx.execute(o.sqlDrop, { st =>
         st.executeUpdate()
@@ -106,7 +106,7 @@ class DDLUnit {
     }
   }
 
-  protected def createObjects(objects: Seq[SchemaObject]) {
+  protected def createObjects(objects: Seq[SchemaObject])(implicit tx: Transaction) {
     objects.foreach { o =>
       tx.execute(o.sqlCreate, { st =>
         st.executeUpdate()
@@ -124,13 +124,13 @@ class DDLUnit {
     }
   }
 
-  def DROP(): this.type = {
+  def DROP()(implicit tx: Transaction): this.type = {
     resetMsgs()
     _drop()
     this
   }
 
-  def _drop() {
+  def _drop()(implicit tx: Transaction) {
     tx.execute({ conn =>
     // We will commit every successfull statement.
       val autoCommit = conn.getAutoCommit
@@ -149,13 +149,13 @@ class DDLUnit {
     }, { throw _ })
   }
 
-  def CREATE(): this.type = {
+  def CREATE()(implicit tx: Transaction): this.type = {
     resetMsgs()
     _create()
     this
   }
 
-  def _create() {
+  def _create()(implicit tx: Transaction) {
     tx.execute({ conn =>
     // We will commit every successfull statement.
       val autoCommit = conn.getAutoCommit
@@ -173,14 +173,14 @@ class DDLUnit {
     }, { throw _ })
   }
 
-  def DROP_CREATE(): this.type = {
+  def DROP_CREATE()(implicit tx: Transaction): this.type = {
     resetMsgs()
     _drop()
     _create()
     this
   }
 
-  def close() {
+  def close()(implicit tx: Transaction) {
     tx.close()
     connectionProvider.close()
   }
